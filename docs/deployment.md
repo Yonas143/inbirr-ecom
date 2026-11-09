@@ -1,6 +1,6 @@
 # Deployment
 
-Use your own Postgres database. Run `pnpm setup` locally to generate fresh secrets; copy those secrets into your host's environment configuration, never into source control. Set `NEXT_PUBLIC_SERVER_URL` to the real HTTPS store origin.
+Use your own Postgres database. Run `pnpm run setup` locally to generate fresh secrets; copy those secrets into your host's environment configuration, never into source control. Set `NEXT_PUBLIC_SERVER_URL` to the real HTTPS store origin.
 
 ## Database
 

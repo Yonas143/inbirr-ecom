@@ -24,7 +24,7 @@ jobs:
           node-version: 24.22.1
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm setup
+      - run: pnpm run setup
       - run: pnpm test:unit
       - run: pnpm exec tsc --noEmit
       - run: NODE_ENV=production pnpm payload migrate

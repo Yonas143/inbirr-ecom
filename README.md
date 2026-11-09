@@ -13,7 +13,7 @@ git clone https://github.com/Yonas143/inbirr-ecom.git
 cd inbirr-ecom
 corepack enable
 pnpm install --frozen-lockfile
-pnpm setup
+pnpm run setup
 docker compose up -d
 pnpm dev
 ```
