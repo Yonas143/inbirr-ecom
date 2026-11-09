@@ -1,0 +1,40 @@
+name: checks
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_PUSH: "false"
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: inbirr_ecom
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: localdev
+        ports: ['5434:5432']
+        options: --health-cmd "pg_isready -U postgres" --health-interval 3s --health-retries 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.22.1
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm setup
+      - run: pnpm test:unit
+      - run: pnpm exec tsc --noEmit
+      - run: NODE_ENV=production pnpm payload migrate
+      - run: ALLOW_MCP_TESTS=true node --env-file=.env --import=tsx/esm scripts/mcp-test-server.mts > /tmp/store.log 2>&1 &
+      - run: |
+          for i in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:3002/api/users/me > /dev/null && exit 0
+            sleep 2
+          done
+          cat /tmp/store.log
+          exit 1
+      - run: ALLOW_MCP_TESTS=true MCP_TEST_URL=http://127.0.0.1:3002 pnpm test:mcp
+      - run: NEXT_DIST_DIR=.next-production pnpm build

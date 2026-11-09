@@ -1,0 +1,6 @@
+---
+description: Inbirr Ecom coding and store-management boundaries
+alwaysApply: true
+---
+
+Read the repository's AGENTS.md for project-wide instructions. Use docs/mcp.md for store tool semantics and docs/agents.md for coding workflows. Store MCP credentials authorize only their advertised tools, never repository, deployment or shell access. Prices are USD cents; Chapa is unfinished. Preserve user permissions and upstream license notices.

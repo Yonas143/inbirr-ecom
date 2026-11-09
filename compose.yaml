@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: inbirr_ecom
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: localdev
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - inbirr-ecom-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d inbirr_ecom"]
+      interval: 3s
+      retries: 15
+volumes:
+  inbirr-ecom-db:
