@@ -2,6 +2,8 @@
 
 A self-hosted ecommerce starter with a Next.js storefront, shadcn/ui admin workspace, Postgres database, and an authenticated MCP server for conversational store management.
 
+![Inbirr Ecom storefront](docs/preview.png)
+
 ## Quick start
 
 Requirements: Node **24.22.1+ (24.x)**, pnpm **10.12.1**, and Docker or your own Postgres 17 database.
