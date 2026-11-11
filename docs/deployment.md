@@ -1,21 +1,41 @@
 # Deployment
 
-Use your own Postgres database. Run `pnpm run setup` locally to generate fresh secrets; copy those secrets into your host's environment configuration, never into source control. Set `NEXT_PUBLIC_SERVER_URL` to the real HTTPS store origin.
+Deploy one store per installation. Use a staging database and separate credentials before exposing a production store. Protect staging and complete administrator setup before making a fresh store public.
 
-## Database
+## Prepare the target
 
-Development (`pnpm dev`) uses schema push against your development DB. Production disables push. Against a dedicated staging DB, run `pnpm payload migrate` with the target `DATABASE_URL`, inspect the result, then build and deploy. Do not run development schema push against production. Back up a live DB before migrations.
+1. Create an empty PostgreSQL database, and give the application its own connection credentials. Provision persistent media storage.
+2. Configure the [environment variables](configuration.md). Generate unique application and preview secrets. Set `NEXT_PUBLIC_SERVER_URL` to the deployed HTTPS origin and `DATABASE_PUSH=false`.
+3. From an environment with network access to the target database, apply the committed migrations before building the app. Confirm the target database and take a backup before migrating any existing store.
 
-For Supabase, use the appropriate pooler connection string and a dedicated database role with only the application's schema privileges. Keep credentials server-side. Configure `DATABASE_SSL_CA` with the provider's root certificate; do not disable certificate verification. Keep app tables in a non-exposed schema or protect Data API access with RLS and appropriate grants; this starter does not configure Supabase policies for your account.
+```sh
+pnpm install --frozen-lockfile
+pnpm exec cross-env NODE_ENV=production pnpm payload migrate
+pnpm build
+```
 
-## Media and email
+The migration command reads your environment, including `DATABASE_URL`; it does not provision the database. Running the build alone does not apply migrations. Use the same code revision for migrations and the application.
 
-Local uploads use `public/media`. On serverless hosts such as Vercel, provision your own Vercel Blob store and set `BLOB_READ_WRITE_TOKEN`. Test image upload and retrieval after deployment. For other hosts, use persistent storage or configure a supported storage adapter.
+## Deploy to Vercel
 
-Email delivery is not configured. Add an email adapter and verify order messages and password resets with your own domain before launch.
+1. Import your own repository and configure Node 24.x matching the repository's engine requirement. Use `pnpm build` as the build command.
+2. Add production and preview environment values separately. Point preview builds to staging, never your live database. Use an [appropriate commercial plan](https://vercel.com/docs/plans/hobby) if you run a business.
+3. Connect [Vercel Blob](https://vercel.com/docs/vercel-blob/using-blob-sdk) and set `BLOB_READ_WRITE_TOKEN`. The built-in adapter serves product media; do not put private customer documents in that media collection. Filesystem uploads are unsuitable for persistent storage on Vercel.
+4. Apply migrations from your trusted deploy environment and deploy. Add the domain, verify HTTPS, and rebuild with the final `NEXT_PUBLIC_SERVER_URL` if it changes.
+5. Sign in to `/admin`, publish a test product, upload and reload its image, and verify the public storefront and cart. Complete the [launch checks](operations.md#launch-checklist) before taking orders.
 
-## Vercel
+## Run on a Node host
 
-Import your own repository, set Node 24.x and environment variables, and build with `pnpm build`. Never commit `.vercel`, `.env`, connection tokens, a database dump or real customer data. Test migrations on staging before directing the deployment at your live DB. Stripe needs API keys and a reachable webhook; Chapa is not implemented. MCP uses per-user bearer keys over HTTPS and is opt-in with `MCP_ENABLED=true`.
+Run `pnpm start` after the build and migration steps. Put the server behind an HTTPS reverse proxy, run it under a supervised process manager, and give it a persistent writable `public/media` directory if you use local uploads. Keep Postgres private and back up the database and files separately. On multiple app instances, use shared durable media storage so every instance can serve an uploaded image.
 
-Start with a private staging store, complete provider sandbox and permission checks, then publish your own storefront. Publishing this source repository does not deploy a store or create cloud resources.
+## Use Supabase as PostgreSQL
+
+This integration uses a Postgres connection string; the store's users and sessions still belong to the CMS. Copy a [connection string suited to your network and workload](https://supabase.com/docs/guides/database/connecting-to-postgres). Verify database reachability and certificate validation from the migration runner and the deployed app. Use `DATABASE_SSL_CA` if your setup needs an explicit trusted CA.
+
+The bundled migrations use the `public` schema. They do not configure Supabase Data API permissions for your account. Review exposure, table grants, and RLS before adding customer data; if you do not use the Data API, disable it or restrict access to the application tables. See [securing Supabase data](https://supabase.com/docs/guides/database/secure-data). Use a dedicated app role with appropriate privileges, and separate migration credentials where practical.
+
+## Updates and rollback
+
+Build and test the revision against staging first. Back up the target database and media before changing the schema. Keep the previous application revision available and check schema compatibility before rolling back code. A code rollback does not undo a migration or restore deleted data. Rehearse recovery against an isolated environment before relying on it.
+
+[Documentation index](README.md) · [Troubleshooting](troubleshooting.md)

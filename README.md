@@ -1,72 +1,50 @@
 # Inbirr Ecom Open Source
 
-A self-hosted ecommerce starter with a Next.js storefront, shadcn/ui admin workspace, Postgres database, and an authenticated MCP server for conversational store management.
+A self-hosted ecommerce starter with a Next.js storefront, shadcn/ui admin, PostgreSQL, and an authenticated MCP endpoint. Manage a store in the admin or connect an AI assistant to work with product drafts, media, inventory, prices, and order summaries.
+
+[![GitHub checks](https://github.com/Yonas143/inbirr-ecom/actions/workflows/ci.yml/badge.svg)](https://github.com/Yonas143/inbirr-ecom/actions/workflows/ci.yml)
 
 ![Inbirr Ecom storefront](docs/preview.png)
 
 ## Quick start
 
-Requirements: Node **24.22.1+ (24.x)**, pnpm **10.12.1**, and Docker or your own Postgres 17 database.
+Use Node **24.22.1+ (24.x)**, pnpm **10.12.1**, and Docker Compose or your own PostgreSQL 17 database.
 
 ```sh
 git clone https://github.com/Yonas143/inbirr-ecom.git
 cd inbirr-ecom
-corepack enable
 pnpm install --frozen-lockfile
 pnpm run setup
-docker compose up -d
+docker compose up -d postgres
 pnpm dev
 ```
 
-Open `http://localhost:3000/admin` and create your own first administrator. There is no shared admin account or password. The storefront is at `/` and `/shop`. The first start creates the schema on your local development database; production uses migrations instead.
+Wait for Postgres to be healthy before starting the app. Visit `http://localhost:3000/admin` to create your first administrator; there is no shared password. The storefront is at `http://localhost:3000/`, and the catalog starts empty. [Walk through your first product](docs/getting-started.md).
 
-The dev/build scripts use Webpack for compatibility with the server-side MCP dependencies.
+## Documentation
 
-Configure store name and tagline with `NEXT_PUBLIC_STORE_NAME` and `NEXT_PUBLIC_STORE_TAGLINE`. Colors and layout are in `src/app/(app)/globals.css`; the included SVG illustration is reusable source artwork. Product images, descriptions, prices, and stock come from the admin or MCP tools. The catalog starts empty.
+- **[Documentation index](docs/README.md)** — choose a guide for your role.
+- [Configure your store](docs/configuration.md) and [manage products, content, and orders](docs/store-management.md).
+- [Connect your AI assistant](docs/mcp.md) and [customize with coding agents](docs/agents.md).
+- [Deploy](docs/deployment.md), [configure Stripe and email](docs/payments.md), and [prepare for launch](docs/operations.md).
+- [Architecture](docs/architecture.md), [development and tests](docs/development.md), and [troubleshooting](docs/troubleshooting.md).
 
-## Connect your AI
+## Connect an AI assistant
 
-1. Sign in as a store administrator and open `/account/ai`.
-2. Create an **AI Access Key**. Enable API access, set an optional expiry, and explicitly enable only the required capabilities. Every tool starts disabled.
-3. Connect an MCP client to `https://YOUR-STORE/api/mcp` with `Authorization: Bearer YOUR_KEY` in the client's secret storage.
-4. Try: “Create a product draft called Studio Tote, slug studio-tote. Do not publish it.”
+Sign in as an administrator and open `/account/ai`. Create an **AI Access Key**, choose its capabilities, and connect your MCP client to `/api/mcp` using a bearer header. Capabilities start disabled. A draft-only key can help prepare a catalog while you review and publish from the admin.
 
-The first release supports product and media lookup, draft creation, owner-approved publishing, simple-product USD prices and inventory, image uploads (PNG/JPEG/WebP, max 2 MiB), and read-only order summaries. Writes create an AI Activity record. Products also retain the CMS's version history.
+> “Create a draft for Studio Tote. Use my supplied photo and price it at USD 12.50. Show me the draft before publishing.”
 
-See [MCP setup and permissions](docs/mcp.md) and [coding-agent workflows](docs/agents.md). Remote browser-based OAuth is **not implemented**; clients must support bearer headers. Store-management keys cannot execute shell commands, edit source, deploy, refund, delete products, or mark orders paid.
+Read the [MCP setup and tool examples](docs/mcp.md). OAuth is not included; use a client that supports Streamable HTTP with custom headers. Coding agents use a repository clone and [AGENTS.md](AGENTS.md) to change source code; store credentials grant store actions only.
 
-## Payments and launch status
+## What ships today
 
-- **Stripe:** the integration is included but requires your publishable key, secret key, and webhook signing secret. Run provider sandbox tests before launch.
-- **Chapa:** not implemented. Optional `PAYMENT_GEO_ROUTING=true` routes Ethiopian visitors to a Chapa-unavailable screen, others to Stripe. Leave it **false** unless you are developing the adapter. No payment is silently routed to an unimplemented provider by default.
-- **Currency:** the shipped catalog and MCP price tool support USD cents only. Add ETB schema and checkout support before implementing local-currency Chapa payments. No currency conversion is performed.
-- **Email:** no production delivery provider is configured. Configure delivery and verify receipts and password resets before launch.
-- Shipping charges, taxes, returns, legal copy, actual stock, and production payment/fulfilment tests are store-owner responsibilities. This is an early starter, not a claim of production certification.
+The starter includes a storefront, cart, admin, migrations, configurable branding, and MCP tools for product drafts, images, simple-product USD prices and inventory, authorized publication, and read-only order summaries. It supports one store per installation.
 
-## Development checks
+**Stripe is scaffolded** and needs your credentials and sandbox tests. **Chapa and ETB checkout are unfinished.** Production email delivery, independent payment reconciliation, and a hosted merchant platform require additional work. See the [launch checklist](docs/operations.md#launch-checklist).
 
-```sh
-pnpm test:unit
-pnpm exec tsc --noEmit
-pnpm build
-```
+## License and contribution
 
-A local-only integration test is available with a running **disposable** development store:
+MIT; see [LICENSE](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md). Inbirr Ecom is built on the Payload ecommerce template and retains the upstream notices and technical identifiers.
 
-```sh
-ALLOW_MCP_TESTS=true MCP_TEST_URL=http://127.0.0.1:3000 pnpm test:mcp
-```
-
-It creates a temporary administrator, customer, draft product, and API keys on that database. Do not run it against a live store. It tests authentication, tool permission restrictions, draft creation, audit recording, and key revocation.
-
-Optional demo seeding requires an administrator and `ENABLE_DEMO_SEED=true` in development. `POST /next/seed` adds two draft products idempotently; it does not clear data or create demo orders/users. The route is always disabled in production.
-
-## Deployment
-
-See [deployment](docs/deployment.md). Use your own database, media storage, and credentials. Secrets belong in host environment variables. Local filesystem uploads do not persist on Vercel; configure Vercel Blob there. No hosted database, cloud project or deployment belongs to this starter.
-
-## License and upstream
-
-MIT; see [LICENSE](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md). The backend is built on the MIT-licensed Payload ecommerce template. UI branding is Inbirr Ecom; framework imports, API identifiers, and required copyright notices retain upstream names.
-
-Contributions: [CONTRIBUTING.md](CONTRIBUTING.md). Security reports: [SECURITY.md](SECURITY.md).
+[Contribute](CONTRIBUTING.md) · [Report security issues privately](SECURITY.md) · [Mobile preview](docs/preview-mobile.png)
